@@ -39,7 +39,7 @@ namespace Microsoft.AspNetCore.Sockets.Client
             _logger = (loggerFactory ?? NullLoggerFactory.Instance).CreateLogger<LongPollingTransport>();
         }
 
-        public Task StartAsync(Uri url, Channel<byte[], SendMessage> application, TransferMode requestedTransferMode, string connectionId)
+        public Task StartAsync(Uri url, Channel<byte[], SendMessage> application, TransferMode requestedTransferMode, string connectionId, CancellationToken cancellationToken = default)
         {
             if (requestedTransferMode != TransferMode.Binary && requestedTransferMode != TransferMode.Text)
             {
@@ -50,10 +50,19 @@ namespace Microsoft.AspNetCore.Sockets.Client
             Mode = requestedTransferMode;
             _connectionId = connectionId;
 
+            if (cancellationToken.CanBeCanceled)
+            {
+                cancellationToken = CancellationTokenSource.CreateLinkedTokenSource(_transportCts.Token, cancellationToken).Token;
+            }
+            else
+            {
+                cancellationToken = _transportCts.Token;
+            }
+
             _logger.StartTransport(_connectionId, Mode.Value);
 
             // Start sending and polling (ask for binary if the server supports it)
-            _poller = Poll(url, _transportCts.Token);
+            _poller = Poll(url, cancellationToken);
             _sender = SendUtils.SendMessages(url, _application, _httpClient, _transportCts, _logger, _connectionId);
 
             Running = Task.WhenAll(_sender, _poller).ContinueWith(t =>
