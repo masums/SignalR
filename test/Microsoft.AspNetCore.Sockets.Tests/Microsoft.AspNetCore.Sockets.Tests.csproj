@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>netcoreapp2.0</TargetFrameworks>
     <TargetFrameworks Condition="'$(OS)' != 'Windows_NT'">netcoreapp2.0</TargetFrameworks>
-    
+
     <RuntimeIdentifier Condition="'$(TargetFramework)' != 'netcoreapp2.0'">win7-x64</RuntimeIdentifier>
   </PropertyGroup>
 
@@ -19,7 +19,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Core" />
     <PackageReference Include="Microsoft.AspNetCore.Hosting" />
     <PackageReference Include="Microsoft.AspNetCore.Http" />
-    <ProjectReference Include="..\..\..\KestrelHttpServer\src\Kestrel\Kestrel.csproj" />
+    <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel" />
     <PackageReference Include="Newtonsoft.Json" />
   </ItemGroup>
 
