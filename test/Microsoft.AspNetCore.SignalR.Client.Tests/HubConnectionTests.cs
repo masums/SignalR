@@ -87,7 +87,7 @@ namespace Microsoft.AspNetCore.SignalR.Client.Tests
         }
 
         [Fact]
-        public async Task PendingInvocationsAreCancelledWhenConnectionClosesCleanly()
+        public async Task PendingInvocationsAreCanceledWhenConnectionClosesCleanly()
         {
             var connection = new TestConnection();
             var hubConnection = new HubConnection(connection, new JsonHubProtocol(), new LoggerFactory());
@@ -109,9 +109,9 @@ namespace Microsoft.AspNetCore.SignalR.Client.Tests
             tcs.Cancel();
             var startTask = hubConnection.StartAsync(tcs.Token);
 
-            await hubConnection.DisposeAsync();
-
             await Assert.ThrowsAsync<TaskCanceledException>(async () => await startTask);
+
+            await hubConnection.DisposeAsync();
         }
 
         [Fact]
@@ -125,7 +125,7 @@ namespace Microsoft.AspNetCore.SignalR.Client.Tests
             await hubConnection.StartAsync();
             var invokeTask = hubConnection.InvokeAsync<int>("testMethod", tcs.Token);
 
-            await Assert.ThrowsAsync<TaskCanceledException>(async () => await invokeTask);
+            await Assert.ThrowsAsync<OperationCanceledException>(async () => await invokeTask);
         }
 
         [Fact]
@@ -137,9 +137,9 @@ namespace Microsoft.AspNetCore.SignalR.Client.Tests
             var tcs = new CancellationTokenSource();
             tcs.Cancel();
             await hubConnection.StartAsync();
-            var cancelledsendTask = hubConnection.SendAsync("testMethod", tcs.Token);
+            var canceledsendTask = hubConnection.SendAsync("testMethod", tcs.Token);
 
-            await Assert.ThrowsAsync<TaskCanceledException>(async () => await cancelledsendTask);
+            await Assert.ThrowsAsync<OperationCanceledException>(async () => await canceledsendTask);
         }
 
         [Fact]
@@ -151,9 +151,9 @@ namespace Microsoft.AspNetCore.SignalR.Client.Tests
             var tcs = new CancellationTokenSource();
             tcs.Cancel();
             await hubConnection.StartAsync();
-            var cancelledStreamTask = hubConnection.StreamAsync("test", typeof(string), new object[] { }, tcs.Token);
+            var canceledStreamTask = hubConnection.StreamAsync("test", typeof(string), new object[] { }, tcs.Token);
 
-            await Assert.ThrowsAsync<TaskCanceledException>(async () => await cancelledStreamTask);
+            await Assert.ThrowsAsync<OperationCanceledException>(async () => await canceledStreamTask);
         }
 
         [Fact]

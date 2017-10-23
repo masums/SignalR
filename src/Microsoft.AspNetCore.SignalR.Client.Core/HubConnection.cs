@@ -97,6 +97,10 @@ namespace Microsoft.AspNetCore.SignalR.Client
                 {
                     cancellationToken = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _connectionActive.Token).Token;
                 }
+                else
+                {
+                    cancellationToken = _connectionActive.Token;
+                }
                 await _connection.SendAsync(memoryStream.ToArray(), cancellationToken);
             }
         }
@@ -183,6 +187,7 @@ namespace Microsoft.AspNetCore.SignalR.Client
 
         private async Task<object> InvokeAsyncCore(string methodName, Type returnType, object[] args, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var irq = InvocationRequest.Invoke(cancellationToken, returnType, GetNextId(), _loggerFactory, this, out var task);
             await InvokeCore(methodName, irq, args, nonBlocking: false);
             return await task;

@@ -58,6 +58,10 @@ namespace Microsoft.AspNetCore.Sockets.Client
             {
                 cancellationToken = CancellationTokenSource.CreateLinkedTokenSource(_transportCts.Token, cancellationToken).Token;
             }
+            else
+            {
+                cancellationToken = _transportCts.Token;
+            }
 
             _application = application;
             Mode = requestedTransferMode;
