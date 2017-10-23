@@ -23,7 +23,7 @@ namespace Microsoft.AspNetCore.Sockets.Client
         private Task _poller;
         private string _connectionId;
 
-        private readonly CancellationTokenSource _transportCts = new CancellationTokenSource();
+        private CancellationTokenSource _transportCts = new CancellationTokenSource();
 
         public Task Running { get; private set; } = Task.CompletedTask;
 
@@ -52,17 +52,13 @@ namespace Microsoft.AspNetCore.Sockets.Client
 
             if (cancellationToken.CanBeCanceled)
             {
-                cancellationToken = CancellationTokenSource.CreateLinkedTokenSource(_transportCts.Token, cancellationToken).Token;
-            }
-            else
-            {
-                cancellationToken = _transportCts.Token;
+                _transportCts = CancellationTokenSource.CreateLinkedTokenSource(_transportCts.Token, cancellationToken);
             }
 
             _logger.StartTransport(_connectionId, Mode.Value);
 
             // Start sending and polling (ask for binary if the server supports it)
-            _poller = Poll(url, cancellationToken);
+            _poller = Poll(url, _transportCts.Token);
             _sender = SendUtils.SendMessages(url, _application, _httpClient, _transportCts, _logger, _connectionId);
 
             Running = Task.WhenAll(_sender, _poller).ContinueWith(t =>
