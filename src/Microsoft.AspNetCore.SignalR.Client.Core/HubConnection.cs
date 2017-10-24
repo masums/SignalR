@@ -206,7 +206,7 @@ namespace Microsoft.AspNetCore.SignalR.Client
             }
 
             // Create an invocation descriptor. Client invocations are always blocking
-            var invocationMessage = new InvocationMessage(irq.InvocationId, nonBlocking, methodName, args);
+            var invocationMessage = new InvocationMessage(irq.InvocationId, nonBlocking, methodName, /*bindingError*/ null, args);
 
             // We don't need to track invocations for fire an forget calls
             if (!nonBlocking)
@@ -252,7 +252,8 @@ namespace Microsoft.AspNetCore.SignalR.Client
                     switch (message)
                     {
                         case InvocationMessage invocation:
-                            _logger.ReceivedInvocation(invocation.InvocationId, invocation.Target, invocation.Arguments);
+                            // TODO: invocation.Arguments may throw now
+                            // _logger.ReceivedInvocation(invocation.InvocationId, invocation.Target, invocation.Arguments);
                             await DispatchInvocationAsync(invocation, _connectionActive.Token);
                             break;
                         case CompletionMessage completion:

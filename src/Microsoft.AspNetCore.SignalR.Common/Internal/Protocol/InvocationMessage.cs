@@ -8,13 +8,29 @@ namespace Microsoft.AspNetCore.SignalR.Internal.Protocol
 {
     public class InvocationMessage : HubMessage
     {
+        // Use ExceptionDispatchInfo ?
+        private readonly Exception _bindingError;
+        private readonly object[] _arguments;
+
         public string Target { get; }
 
-        public object[] Arguments { get; }
+        public object[] Arguments
+        {
+            get
+            {
+                if (_bindingError != null)
+                {
+                    throw _bindingError;
+                }
+
+                return _arguments;
+            }
+        }
 
         public bool NonBlocking { get; }
 
-        public InvocationMessage(string invocationId, bool nonBlocking, string target, params object[] arguments) : base(invocationId)
+        public InvocationMessage(string invocationId, bool nonBlocking, string target, Exception bindingError, params object[] arguments)
+            : base(invocationId)
         {
             if (string.IsNullOrEmpty(invocationId))
             {
@@ -26,13 +42,15 @@ namespace Microsoft.AspNetCore.SignalR.Internal.Protocol
                 throw new ArgumentNullException(nameof(target));
             }
 
-            if (arguments == null)
+            if ((arguments == null && bindingError == null) || (arguments?.Length > 0 && bindingError != null))
             {
+                // TODO: fix the exception
                 throw new ArgumentNullException(nameof(arguments));
             }
 
             Target = target;
-            Arguments = arguments;
+            _arguments = arguments;
+            _bindingError = bindingError;
             NonBlocking = nonBlocking;
         }
 

@@ -55,24 +55,26 @@ namespace Microsoft.AspNetCore.SignalR.Internal.Protocol
 
         private static HubMessage ParseMessage(Stream input, IInvocationBinder binder)
         {
-            var unpacker = Unpacker.Create(input);
-            var arraySize = ReadArrayLength(unpacker, "elementCount");
-            var messageType = ReadInt32(unpacker, "messageType");
-
-            switch (messageType)
+            using (var unpacker = Unpacker.Create(input))
             {
-                case InvocationMessageType:
-                    return CreateInvocationMessage(unpacker, binder);
-                case StreamItemMessageType:
-                    return CreateStreamItemMessage(unpacker, binder);
-                case CompletionMessageType:
-                    return CreateCompletionMessage(unpacker, binder);
-                case StreamCompletionMessageType:
-                    return CreateStreamCompletionMessage(unpacker, arraySize, binder);
-                case CancelInvocationMessageType:
-                    return CreateCancelInvocationMessage(unpacker);
-                default:
-                    throw new FormatException($"Invalid message type: {messageType}.");
+                var arraySize = ReadArrayLength(unpacker, "elementCount");
+                var messageType = ReadInt32(unpacker, "messageType");
+
+                switch (messageType)
+                {
+                    case InvocationMessageType:
+                        return CreateInvocationMessage(unpacker, binder);
+                    case StreamItemMessageType:
+                        return CreateStreamItemMessage(unpacker, binder);
+                    case CompletionMessageType:
+                        return CreateCompletionMessage(unpacker, binder);
+                    case StreamCompletionMessageType:
+                        return CreateStreamCompletionMessage(unpacker, arraySize, binder);
+                    case CancelInvocationMessageType:
+                        return CreateCancelInvocationMessage(unpacker);
+                    default:
+                        throw new FormatException($"Invalid message type: {messageType}.");
+                }
             }
         }
 
@@ -81,8 +83,22 @@ namespace Microsoft.AspNetCore.SignalR.Internal.Protocol
             var invocationId = ReadInvocationId(unpacker);
             var nonBlocking = ReadBoolean(unpacker, "nonBlocking");
             var target = ReadString(unpacker, "target");
-            var argumentCount = ReadArrayLength(unpacker, "arguments");
             var parameterTypes = binder.GetParameterTypes(target);
+
+            try
+            {
+                var arguments = BindArguments(unpacker, parameterTypes);
+                return new InvocationMessage(invocationId, nonBlocking, target, /* bindingError */ null, arguments);
+            }
+            catch (Exception exception)
+            {
+                return new InvocationMessage(invocationId, nonBlocking, target, exception);
+            }
+        }
+
+        private static object[] BindArguments(Unpacker unpacker, Type[] parameterTypes)
+        {
+            var argumentCount = ReadArrayLength(unpacker, "arguments");
 
             if (parameterTypes.Length != argumentCount)
             {
@@ -96,7 +112,7 @@ namespace Microsoft.AspNetCore.SignalR.Internal.Protocol
                 arguments[i] = DeserializeObject(unpacker, parameterTypes[i], "argument");
             }
 
-            return new InvocationMessage(invocationId, nonBlocking, target, arguments);
+            return arguments;
         }
 
         private static StreamItemMessage CreateStreamItemMessage(Unpacker unpacker, IInvocationBinder binder)
